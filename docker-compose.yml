@@ -1,0 +1,58 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: nginx
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: phpapp
+    container_name: phpcontainer
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./src/app:/var/www
+    networks:
+      - shashnetwork
+    environment:
+      DB_CONNECTION: ${DB_CONNECTION}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+    depends_on:
+      - db
+  db:
+    image: mysql:8.0
+    container_name: appmysqlcontainer
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PORT: ${DB_PORT}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - shashnetwork
+    ports:
+      - 33061:3306
+  nginx:
+    image: nginx:alpine
+    container_name: nginxcontainer
+    restart: unless-stopped
+    ports:
+      - 8003:80
+    volumes:
+      - ./src/app:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - shashnetwork
+networks:
+  shashnetwork:
+    driver: bridge
